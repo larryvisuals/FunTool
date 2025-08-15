@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五十音學習遊戲</title>
+    <!-- 使用 Tailwind CSS 來快速美化介面 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+
+        .container {
+            max-width: 800px;
+        }
+
+        .card {
+            background-color: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .option-button {
+            transition: all 0.2s;
+        }
+
+        .option-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .correct-answer {
+            background-color: #4ade80 !important;
+            /* Tailwind's green-400 */
+        }
+
+        .incorrect-answer {
+            background-color: #f87171 !important;
+            /* Tailwind's red-400 */
+        }
+    </style>
+</head>
+
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="container mx-auto p-8 rounded-xl card text-center">
+        <h1 class="text-4xl md:text-5xl font-extrabold text-gray-800 mb-4">五十音學習遊戲</h1>
+        <p class="text-lg text-gray-600 mb-8">挑戰自己，看看能答對幾題！</p>
+
+        <!-- 遊戲主畫面 -->
+        <div id="game-area" class="space-y-6">
+            <!-- 顯示分數與計時器 -->
+            <div class="flex justify-between items-center px-4 py-2 bg-gray-100 rounded-lg shadow-inner">
+                <span class="text-xl font-medium text-gray-700">分數:</span>
+                <span id="score-display" class="text-3xl font-bold text-blue-600">0</span>
+                <span class="text-xl font-medium text-gray-700">時間:</span>
+                <span id="timer-display" class="text-3xl font-bold text-red-600">5</span>
+            </div>
+
+            <!-- 顯示題目 -->
+            <div class="text-6xl md:text-8xl font-bold text-gray-900 my-8 flex items-center justify-center h-28">
+                <span id="question-display"></span>
+            </div>
+
+            <!-- 選項按鈕區塊 -->
+            <div id="options-container" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <!-- 選項按鈕將由 JavaScript 動態生成 -->
+            </div>
+
+            <!-- 顯示遊戲狀態或結果的訊息 -->
+            <div id="message-display" class="text-xl font-semibold min-h-[2rem]"></div>
+
+            <!-- 開始/下一題按鈕 -->
+            <button id="next-question-button"
+                class="option-button w-full px-8 py-4 text-white bg-blue-600 rounded-xl font-bold text-lg hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                開始遊戲
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 五十音資料庫
+        // 包含平假名、片假名和羅馬拼音
+        const gojuon = [
+            // あ行
+            { hira: 'あ',kata: 'ア',romaji: 'a' },{ hira: 'い',kata: 'イ',romaji: 'i' },{ hira: 'う',kata: 'ウ',romaji: 'u' },{ hira: 'え',kata: 'エ',romaji: 'e' },{ hira: 'お',kata: 'オ',romaji: 'o' },
+            // か行
+            { hira: 'か',kata: 'カ',romaji: 'ka' },{ hira: 'き',kata: 'キ',romaji: 'ki' },{ hira: 'く',kata: 'ク',romaji: 'ku' },{ hira: 'け',kata: 'ケ',romaji: 'ke' },{ hira: 'こ',kata: 'コ',romaji: 'ko' },
+            // さ行
+            { hira: 'さ',kata: 'サ',romaji: 'sa' },{ hira: 'し',kata: 'シ',romaji: 'shi' },{ hira: 'す',kata: 'ス',romaji: 'su' },{ hira: 'せ',kata: 'セ',romaji: 'se' },{ hira: 'そ',kata: 'ソ',romaji: 'so' },
+            // た行
+            { hira: 'た',kata: 'タ',romaji: 'ta' },{ hira: 'ち',kata: 'チ',romaji: 'chi' },{ hira: 'つ',kata: 'ツ',romaji: 'tsu' },{ hira: 'て',kata: 'テ',romaji: 'te' },{ hira: 'と',kata: 'ト',romaji: 'to' },
+            // な行
+            { hira: 'な',kata: 'ナ',romaji: 'na' },{ hira: 'に',kata: 'ニ',romaji: 'ni' },{ hira: 'ぬ',kata: 'ヌ',romaji: 'nu' },{ hira: 'ね',kata: 'ネ',romaji: 'ne' },{ hira: 'の',kata: 'ノ',romaji: 'no' },
+            // は行
+            { hira: 'は',kata: 'ハ',romaji: 'ha' },{ hira: 'ひ',kata: 'ヒ',romaji: 'hi' },{ hira: 'ふ',kata: 'フ',romaji: 'fu' },{ hira: 'へ',kata: 'ヘ',romaji: 'he' },{ hira: 'ほ',kata: 'ホ',romaji: 'ho' },
+            // ま行
+            { hira: 'ま',kata: 'マ',romaji: 'ma' },{ hira: 'み',kata: 'ミ',romaji: 'mi' },{ hira: 'む',kata: 'ム',romaji: 'mu' },{ hira: 'め',kata: 'メ',romaji: 'me' },{ hira: 'も',kata: 'モ',romaji: 'mo' },
+            // や行
+            { hira: 'や',kata: 'ヤ',romaji: 'ya' },{ hira: 'ゆ',kata: 'ユ',romaji: 'yu' },{ hira: 'よ',kata: 'ヨ',romaji: 'yo' },
+            // ら行
+            { hira: 'ら',kata: 'ラ',romaji: 'ra' },{ hira: 'り',kata: 'リ',romaji: 'ri' },{ hira: 'る',kata: 'ル',romaji: 'ru' },{ hira: 'れ',kata: 'レ',romaji: 're' },{ hira: 'ろ',kata: 'ロ',romaji: 'ro' },
+            // わ行
+            { hira: 'わ',kata: 'ワ',romaji: 'wa' },{ hira: 'を',kata: 'ヲ',romaji: 'wo' },{ hira: 'ん',kata: 'ン',romaji: 'n' }
+        ];
+
+        // 獲取 DOM 元素
+        const scoreDisplay = document.getElementById('score-display');
+        const timerDisplay = document.getElementById('timer-display');
+        const questionDisplay = document.getElementById('question-display');
+        const optionsContainer = document.getElementById('options-container');
+        const messageDisplay = document.getElementById('message-display');
+        const nextQuestionButton = document.getElementById('next-question-button');
+
+        // 遊戲狀態變數
+        let score = 0;
+        let currentQuestion = null;
+        let isGameActive = false;
+        let answeredCorrectly = false;
+        let timer = 5;
+        let timerInterval = null;
+
+        // 開始計時
+        function startTimer(answerKey) {
+            timer = 5;
+            timerDisplay.textContent = timer;
+            timerInterval = setInterval(() => {
+                timer--;
+                timerDisplay.textContent = timer;
+                if (timer <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeout(answerKey);
+                }
+            },1000);
+        }
+
+        // 處理時間到
+        function handleTimeout(answerKey) {
+            if (answeredCorrectly) return; // 如果已經答對了，就不處理超時
+
+            messageDisplay.textContent = '❌ 時間到了！';
+
+            // 標記正確答案並禁用所有按鈕
+            optionsContainer.querySelectorAll('button').forEach(btn => {
+                btn.disabled = true;
+                if (btn.dataset.answer === answerKey) {
+                    btn.classList.add('correct-answer');
+                }
+            });
+
+            nextQuestionButton.textContent = '下一題';
+            nextQuestionButton.style.display = 'block';
+        }
+
+        // 生成一個新的題目
+        function generateNewQuestion() {
+            // 從五十音中隨機選一個作為正確答案
+            const correctAnswer = gojuon[Math.floor(Math.random() * gojuon.length)];
+            currentQuestion = correctAnswer;
+
+            // 隨機決定出題類型（平假名、片假名或羅馬拼音）
+            // 0: 出平假名, 1: 出片假名, 2: 出羅馬拼音
+            const questionType = Math.floor(Math.random() * 3);
+
+            let questionText = '';
+            let answerKey = '';
+            let options = [];
+
+            if (questionType === 0) { // 出平假名，選項為羅馬拼音
+                questionText = correctAnswer.hira;
+                answerKey = correctAnswer.romaji;
+                options.push(correctAnswer.romaji);
+                // 產生三個錯誤選項
+                while (options.length < 4) {
+                    const randomOption = gojuon[Math.floor(Math.random() * gojuon.length)].romaji;
+                    if (!options.includes(randomOption)) {
+                        options.push(randomOption);
+                    }
+                }
+            } else if (questionType === 1) { // 出片假名，選項為羅馬拼音
+                questionText = correctAnswer.kata;
+                answerKey = correctAnswer.romaji;
+                options.push(correctAnswer.romaji);
+                while (options.length < 4) {
+                    const randomOption = gojuon[Math.floor(Math.random() * gojuon.length)].romaji;
+                    if (!options.includes(randomOption)) {
+                        options.push(randomOption);
+                    }
+                }
+            } else { // 出羅馬拼音，選項為平假名或片假名
+                questionText = correctAnswer.romaji;
+                // 隨機決定答案是平假名還是片假名
+                const answerType = Math.random() < 0.5 ? 'hira' : 'kata';
+                answerKey = correctAnswer[answerType];
+                options.push(answerKey);
+
+                while (options.length < 4) {
+                    const randomOption = gojuon[Math.floor(Math.random() * gojuon.length)][answerType];
+                    if (!options.includes(randomOption)) {
+                        options.push(randomOption);
+                    }
+                }
+            }
+
+            // 隨機打亂選項
+            options.sort(() => Math.random() - 0.5);
+
+            // 更新畫面
+            questionDisplay.textContent = questionText;
+            optionsContainer.innerHTML = ''; // 清空舊的選項
+
+            options.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.classList.add('option-button','w-full','px-4','py-6','bg-gray-200','rounded-xl','font-bold','text-2xl','text-gray-800','hover:bg-gray-300','active:bg-gray-400','focus:outline-none','focus:ring-2','focus:ring-blue-300');
+                button.dataset.answer = option;
+                optionsContainer.appendChild(button);
+
+                // 綁定點擊事件
+                button.addEventListener('click',() => handleAnswer(button,answerKey));
+            });
+
+            // 啟用所有選項按鈕
+            optionsContainer.querySelectorAll('button').forEach(btn => btn.disabled = false);
+
+            messageDisplay.textContent = '';
+            nextQuestionButton.style.display = 'none'; // 隱藏下一題按鈕
+            answeredCorrectly = false; // 重設狀態
+
+            // 開始計時
+            startTimer(answerKey);
+        }
+
+        // 處理玩家的答案
+        function handleAnswer(selectedButton,answerKey) {
+            if (answeredCorrectly) return; // 已經答對了，不再處理
+
+            clearInterval(timerInterval); // 玩家回答後停止計時
+
+            const isCorrect = selectedButton.dataset.answer === answerKey;
+
+            optionsContainer.querySelectorAll('button').forEach(btn => {
+                // 禁用所有按鈕
+                btn.disabled = true;
+
+                // 標記正確答案
+                if (btn.dataset.answer === answerKey) {
+                    btn.classList.add('correct-answer');
+                } else if (btn === selectedButton) {
+                    // 標記錯誤答案
+                    btn.classList.add('incorrect-answer');
+                }
+            });
+
+            if (isCorrect) {
+                score++;
+                messageDisplay.textContent = '✅ 正確！';
+                answeredCorrectly = true;
+            } else {
+                messageDisplay.textContent = '❌ 錯誤，再試試看！';
+            }
+
+            scoreDisplay.textContent = score;
+            nextQuestionButton.textContent = '下一題';
+            nextQuestionButton.style.display = 'block'; // 顯示下一題按鈕
+        }
+
+        // 遊戲啟動及重置
+        function startGame() {
+            if (!isGameActive) {
+                score = 0;
+                scoreDisplay.textContent = score;
+                isGameActive = true;
+                nextQuestionButton.textContent = '下一題';
+            }
+            generateNewQuestion();
+        }
+
+        // 綁定開始/下一題按鈕的事件
+        nextQuestionButton.addEventListener('click',startGame);
+
+        // 初始畫面，提示玩家開始遊戲
+        questionDisplay.textContent = '準備好了嗎？';
+        nextQuestionButton.textContent = '開始遊戲';
+    </script>
+</body>
+
+</html>
